@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Global University Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <style>
+        #map { height: 400px; }
+        .leaflet-container { border-radius: 8px; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto px-4 py-8">
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-bold mb-2">Credenc Study Abroad Dashboard 🌍</h1>
+            <p class="text-lg text-gray-600">Insights into international education trends and finances</p>
+        </header>
+
+        <section id="mapSection" class="mb-8 bg-white rounded-lg shadow p-6">
+            <h2 class="text-2xl font-semibold mb-4">Interactive World Map 🗺️</h2>
+            <div id="map"></div>
+        </section>
+
+        <section id="chartsSection" class="mb-8">
+            <div class="flex flex-wrap -mx-2">
+                <div class="w-full lg:w-1/2 px-2 mb-4">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-xl font-semibold mb-3">Student Distribution by University 🎓</h3>
+                        <canvas id="studentChart"></canvas>
+                    </div>
+                </div>
+                <div class="w-full lg:w-1/2 px-2">
+                    <div class="bg-white rounded-lg shadow p-6">
+                        <h3 class="text-xl font-semibold mb-3">Average Loan Amounts 💰</h3>
+                        <canvas id="loanChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="dataTableSection">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-2xl font-semibold mb-4">University Data Overview 📊</h2>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full leading-normal">
+                        <thead>
+                            <tr>
+                                <th class="px-5 py-3 bg-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">University</th>
+                                <th class="px-5 py-3 bg-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Country</th>
+                                <th class="px-5 py-3 bg-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Students</th>
+                                <th class="px-5 py-3 bg-gray-200 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Average Loan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody">
+                            <!-- Data rows will be inserted here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Initialize Leaflet Map
+        var map = L.map('map').setView([20, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Sample JSON data - replace with actual data
+        var universities = [
+    {"name": "MIT", "country": "USA", "lat": 42.3601, "lon": -71.0942, "students": 500, "averageLoan": 30000},
+    {"name": "University of Oxford", "country": "UK", "lat": 51.7520, "lon": -1.2577, "students": 550, "averageLoan": 35000},
+    {"name": "University of Toronto", "country": "Canada", "lat": 43.6629, "lon": -79.3957, "students": 450, "averageLoan": 27000},
+    {"name": "University of Melbourne", "country": "Australia", "lat": -37.7982, "lon": 144.9594, "students": 430, "averageLoan": 29000},
+    {"name": "Technical University of Munich", "country": "Germany", "lat": 48.1497, "lon": 11.5684, "students": 400, "averageLoan": 25000},
+    {"name": "Stanford University", "country": "USA", "lat": 37.4275, "lon": -122.1697, "students": 520, "averageLoan": 31000},
+    {"name": "University of Cambridge", "country": "UK", "lat": 52.2043, "lon": 0.1218, "students": 560, "averageLoan": 36000},
+    {"name": "University of British Columbia", "country": "Canada", "lat": 49.2606, "lon": -123.2460, "students": 480, "averageLoan": 28000},
+    {"name": "University of Sydney", "country": "Australia", "lat": -33.8688, "lon": 151.2093, "students": 420, "averageLoan": 27000},
+    {"name": "Ludwig Maximilian University of Munich", "country": "Germany", "lat": 48.1508, "lon": 11.5802, "students": 410, "averageLoan": 26000},
+    {"name": "Harvard University", "country": "USA", "lat": 42.3770, "lon": -71.1167, "students": 530, "averageLoan": 32000},
+    {"name": "Imperial College London", "country": "UK", "lat": 51.4988, "lon": -0.1749, "students": 540, "averageLoan": 34000},
+    {"name": "McGill University", "country": "Canada", "lat": 45.5048, "lon": -73.5772, "students": 460, "averageLoan": 26500},
+    {"name": "Australian National University", "country": "Australia", "lat": -35.2777, "lon": 149.1185, "students": 400, "averageLoan": 27500},
+    {"name": "Free University of Berlin", "country": "Germany", "lat": 52.4577, "lon": 13.2923, "students": 380, "averageLoan": 24000},
+    {"name": "Columbia University", "country": "USA", "lat": 40.8075, "lon": -73.9626, "students": 510, "averageLoan": 30500},
+    {"name": "University College London", "country": "UK", "lat": 51.5246, "lon": -0.1340, "students": 530, "averageLoan": 33000},
+    {"name": "University of Alberta", "country": "Canada", "lat": 53.5232, "lon": -113.5263, "students": 440, "averageLoan": 26000},
+    {"name": "University of Queensland", "country": "Australia", "lat": -27.4970, "lon": 153.0134, "students": 410, "averageLoan": 26500},
+    {"name": "Humboldt University of Berlin", "country": "Germany", "lat": 52.5176, "lon": 13.3935, "students": 370, "averageLoan": 23000},
+    {"name": "Yale University", "country": "USA", "lat": 41.3163, "lon": -72.9223, "students": 500, "averageLoan": 31500},
+    {"name": "King's College London", "country": "UK", "lat": 51.5115, "lon": -0.1160, "students": 520, "averageLoan": 33500},
+    {"name": "University of Waterloo", "country": "Canada", "lat": 43.4723, "lon": -80.5449, "students": 470, "averageLoan": 25500},
+    {"name": "Monash University", "country": "Australia", "lat": -37.9105, "lon": 145.1362, "students": 430, "averageLoan": 28000},
+    {"name": "University of Heidelberg", "country": "Germany", "lat": 49.4094, "lon": 8.6937, "students": 360, "averageLoan": 22000},
+    {"name": "University of Chicago", "country": "USA", "lat": 41.7897, "lon": -87.5994, "students": 480, "averageLoan": 30000},
+    {"name": "University of Edinburgh", "country": "UK", "lat": 55.9440, "lon": -3.1890, "students": 510, "averageLoan": 34500},
+    {"name": "Simon Fraser University", "country": "Canada", "lat": 49.2795, "lon": -122.9188, "students": 450, "averageLoan": 25000},
+    {"name": "University of New South Wales", "country": "Australia", "lat": -33.9173, "lon": 151.2313, "students": 420, "averageLoan": 26000},
+    {"name": "University of Frankfurt", "country": "Germany", "lat": 50.1276, "lon": 8.6521, "students": 350, "averageLoan": 21500},
+    {"name": "Princeton University", "country": "USA", "lat": 40.3430, "lon": -74.6514, "students": 460, "averageLoan": 31000},
+    {"name": "University of Manchester", "country": "UK", "lat": 53.4668, "lon": -2.2339, "students": 500, "averageLoan": 33000},
+    {"name": "Dalhousie University", "country": "Canada", "lat": 44.6366, "lon": -63.5917, "students": 420, "averageLoan": 24500},
+    {"name": "University of Western Australia", "country": "Australia", "lat": -31.9815, "lon": 115.8183, "students": 400, "averageLoan": 25500},
+    {"name": "Technical University of Berlin", "country": "Germany", "lat": 52.5119, "lon": 13.3266, "students": 340, "averageLoan": 21000},
+    {"name": "Cornell University", "country": "USA", "lat": 42.4534, "lon": -76.4735, "students": 470, "averageLoan": 30500},
+    {"name": "University of Southampton", "country": "UK", "lat": 50.9368, "lon": -1.3978, "students": 480, "averageLoan": 32000},
+    {"name": "Queen's University", "country": "Canada", "lat": 44.2253, "lon": -76.4951, "students": 430, "averageLoan": 24000},
+    {"name": "University of Adelaide", "country": "Australia", "lat": -34.9207, "lon": 138.6049, "students": 390, "averageLoan": 25000},
+    {"name": "Goethe University Frankfurt", "country": "Germany", "lat": 50.1266, "lon": 8.6674, "students": 330, "averageLoan": 20000}
+]
+
+
+        // Populate Map with University Data
+        universities.forEach(function(uni) {
+            L.marker([uni.lat, uni.lon]).addTo(map)
+              .bindPopup(`<strong>${uni.name}</strong><br>Students: ${uni.students}<br>Average Loan: $${uni.averageLoan}`);
+        });
+
+        // Chart.js for Student Distribution
+        var studentCtx = document.getElementById('studentChart').getContext('2d');
+        var studentChart = new Chart(studentCtx, {
+            type: 'bar',
+            data: {
+                labels: universities.map(u => u.name),
+                datasets: [{
+                    label: 'Number of Students',
+                    data: universities.map(u => u.students),
+                    backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    yAxes: [{ ticks: { beginAtZero: true } }]
+                }
+            }
+        });
+
+        // Chart.js for Average Loan Amounts
+        var loanCtx = document.getElementById('loanChart').getContext('2d');
+        var loanChart = new Chart(loanCtx, {
+            type: 'line',
+            data: {
+                labels: universities.map(u => u.name),
+                datasets: [{
+                    label: 'Average Loan per Student (USD)',
+                    data: universities.map(u => u.averageLoan),
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    yAxes: [{ ticks: { beginAtZero: true } }]
+                }
+            }
+        });
+
+        // Populate Data Table
+        var dataTableBody = document.getElementById('dataTableBody');
+        universities.forEach(function(uni) {
+            var row = `<tr>
+                         <td>${uni.name}</td>
+                         <td>${uni.country}</td>
+                         <td>${uni.students}</td>
+                         <td>$${uni.averageLoan}</td>
+                       </tr>`;
+            dataTableBody.innerHTML += row;
+        });
+    </script>
+
+</body>
+</html>
